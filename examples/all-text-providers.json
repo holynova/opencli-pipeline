@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "name": "all-text-provider-preflight",
+  "mode": "text",
+  "providers": ["all"],
+  "prompts": [
+    { "id": "smoke", "text": "请只回复：ok" }
+  ],
+  "options": {
+    "timeoutSeconds": 120,
+    "continueOnError": true,
+    "siteSession": "ephemeral"
+  }
+}

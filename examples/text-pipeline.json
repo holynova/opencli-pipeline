@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "name": "text-example",
+  "mode": "text",
+  "providers": [
+    {
+      "id": "gemini",
+      "timeoutSeconds": 120,
+      "options": { "model": "2.5-flash" }
+    },
+    {
+      "id": "deepseek",
+      "timeoutSeconds": 180,
+      "options": { "model": "expert", "think": true }
+    }
+  ],
+  "prompts": [
+    { "id": "greeting", "text": "用一句话介绍串行内容生成工作流。" }
+  ],
+  "options": {
+    "timeoutSeconds": 120,
+    "continueOnError": true,
+    "siteSession": "ephemeral"
+  }
+}

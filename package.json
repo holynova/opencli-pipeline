@@ -1,0 +1,28 @@
+{
+  "name": "opencli-pipeline",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Strictly serial, local-first content pipelines orchestrated through OpenCLI.",
+  "homepage": "https://github.com/holynova/opencli-pipeline",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/holynova/opencli-pipeline.git"
+  },
+  "type": "module",
+  "bin": {
+    "ocp": "bin/ocp.js"
+  },
+  "scripts": {
+    "test": "node --test test/ocp.test.js",
+    "start": "node bin/ocp.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "keywords": [
+    "opencli",
+    "ai",
+    "pipeline",
+    "cli"
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "name": "image-example",
+  "mode": "image",
+  "providers": [
+    {
+      "id": "gemini",
+      "timeoutSeconds": 240,
+      "options": { "rt": "16:9", "st": "watercolor" }
+    },
+    "chatgpt"
+  ],
+  "prompts": [
+    { "id": "cover", "text": "月光下的银狐在雪地奔跑，水彩插画。" }
+  ],
+  "options": {
+    "timeoutSeconds": 240,
+    "continueOnError": true,
+    "siteSession": "ephemeral"
+  }
+}
