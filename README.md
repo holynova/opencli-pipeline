@@ -6,6 +6,8 @@
 
 它不调用模型 API，也不保存 Cookie、账号或密码。模型登录、会员资格和生成额度都由 OpenCLI 连接的浏览器会话提供。
 
+项目介绍页：[opencli-pipeline.xiaosang.cc](https://opencli-pipeline.xiaosang.cc/)。云端页面仅发布静态文档；CLI 和 OpenCLI 调用仍需本地环境。
+
 ## 能做什么
 
 - 批量处理多条提示词，严格串行执行。

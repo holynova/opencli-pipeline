@@ -1,0 +1,13 @@
+.git/
+.github/
+.wrangler/
+.playwright-cli/
+.gitignore
+README.md
+package.json
+package-lock.json
+pnpm-lock.yaml
+bin/
+src/
+test/
+examples/

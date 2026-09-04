@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="OpenCLI Pipeline：严格串行、local-first 的文本与图片工作流工具。" />
+    <title>OpenCLI Pipeline</title>
+    <style>
+      :root { color-scheme: dark; --bg: #0b1020; --panel: #151d33; --text: #edf2ff; --muted: #aab6d3; --accent: #8ee3c2; }
+      * { box-sizing: border-box; }
+      body { margin: 0; min-height: 100vh; background: radial-gradient(circle at 85% 10%, #263d63, transparent 36%), var(--bg); color: var(--text); font: 16px/1.7 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+      main { width: min(960px, calc(100% - 32px)); margin: 0 auto; padding: 72px 0; }
+      .eyebrow { color: var(--accent); font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+      h1 { max-width: 680px; margin: 12px 0; font-size: clamp(2.4rem, 7vw, 5rem); line-height: 1.02; letter-spacing: -.05em; }
+      .lead { max-width: 680px; color: var(--muted); font-size: 1.2rem; }
+      .actions { display: flex; flex-wrap: wrap; gap: 12px; margin: 28px 0 52px; }
+      a { color: inherit; }
+      .button { display: inline-block; padding: 10px 16px; border: 1px solid #405074; border-radius: 999px; text-decoration: none; }
+      .button.primary { border-color: var(--accent); background: var(--accent); color: #0b201a; font-weight: 700; }
+      .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
+      article { padding: 20px; border: 1px solid #2a3858; border-radius: 18px; background: color-mix(in srgb, var(--panel) 90%, transparent); }
+      h2 { margin: 0 0 8px; font-size: 1.1rem; }
+      article p { margin: 0; color: var(--muted); }
+      code { color: var(--accent); }
+      footer { margin-top: 52px; color: var(--muted); font-size: .9rem; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div class="eyebrow">OpenCLI Pipeline · v0.1.0</div>
+      <h1>把多条提示词，变成可复盘的串行工作流。</h1>
+      <p class="lead">一个 local-first 命令行工具：按配置依次调用 OpenCLI，把文本回答或图片、错误日志和运行汇总保存到独立目录。</p>
+      <div class="actions">
+        <a class="button primary" href="https://github.com/holynova/opencli-pipeline">查看源代码</a>
+        <a class="button" href="https://github.com/holynova/opencli-pipeline#最短使用流程">快速开始</a>
+      </div>
+      <section class="grid" aria-label="Features">
+        <article><h2>严格串行</h2><p>按提示词与平台顺序执行，失败可继续或安全停止。</p></article>
+        <article><h2>文本与图片</h2><p>支持多个 OpenCLI 文本平台，以及 ChatGPT/Gemini 图片工作流。</p></article>
+        <article><h2>结果可复盘</h2><p>每次运行保留请求、原始返回、错误、结果和汇总。</p></article>
+        <article><h2>账号边界清晰</h2><p>不调用模型 API，也不保存 Cookie、账号或密码。</p></article>
+      </section>
+      <footer>云端页面是项目文档与介绍；实际 OpenCLI 调用需要 Node.js 20+、浏览器桥接和本地登录态。</footer>
+    </main>
+  </body>
+</html>
