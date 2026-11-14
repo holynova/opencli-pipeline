@@ -2,7 +2,7 @@
 
 `ocp` 是一个本地命令行工作流工具。你把多条提示词和目标平台写进一个 JSON 文件，它会按顺序调用 OpenCLI，把每条文本回答或图片单独保存下来。
 
-当前版本：`v0.1.0`。仓库：[holynova/opencli-pipeline](https://github.com/holynova/opencli-pipeline)。
+当前版本：`v0.1.1`。仓库：[holynova/opencli-pipeline](https://github.com/holynova/opencli-pipeline)。
 
 它不调用模型 API，也不保存 Cookie、账号或密码。模型登录、会员资格和生成额度都由 OpenCLI 连接的浏览器会话提供。
 
@@ -38,7 +38,7 @@ node bin/ocp.js providers
 # 2. 从示例创建或编辑自己的 Pipeline
 cp examples/text-pipeline.json my-pipeline.json
 
-# 3. 只检查配置，不会生成内容
+# 3. 只检查配置，不会生成内容（未装 OpenCLI 时只做离线结构校验，会明确提示）
 node bin/ocp.js validate my-pipeline.json
 
 # 4. 检查 Browser Bridge 和账号状态
@@ -259,6 +259,10 @@ node bin/ocp.js resume runs/20260718T150000-article-outline
 已经成功且产物仍在的项目不会再次调用模型。失败或未完成的项目会重新执行。
 
 ## 常见问题
+
+### 为什么 `validate` 提示「离线校验」？
+
+本机未安装 OpenCLI（或不在 PATH 里）时，`validate` 只检查配置结构与图像模式平台限制，文本平台可用性与平台参数无法校验。装好 OpenCLI 后再跑一次即为完整校验。其他命令（`providers`、`preflight`、`run`）必须有 OpenCLI 才能工作。
 
 ### 为什么 `run` 被预检拦住？
 

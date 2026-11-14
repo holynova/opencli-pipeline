@@ -21,7 +21,7 @@ export async function main(argv) {
   if (command === "run") return runCommand(rest);
   if (command === "resume") return resumeCommand(rest);
   if (command === "init") return initCommand(rest);
-  throw new Error(`Unknown command: ${command}. Run 'ocp help'.`);
+  throw new Error(`未知命令：${command}。请运行 ocp help 查看可用命令。`);
 }
 
 function printHelp(topic) {
@@ -30,12 +30,12 @@ function printHelp(topic) {
     providers: `查看当前机器支持的平台\n\n用法：ocp providers [--json]\n\n读取 opencli list -f json，显示可用于文本的 ask 适配器与可用于图像的 ChatGPT、Gemini。--json 适合脚本处理。`,
     preflight: `检查环境和账号，不生成内容\n\n用法：ocp preflight <pipeline.json> [--json] [--login]\n\n检查 OpenCLI Browser Bridge、平台能力和登录状态。--login 会对尚未登录的平台打开网页登录页并等待完成登录。状态为 no 或 unknown 时，run 默认拒绝执行。`,
     login: `登录所选平台\n\n用法：ocp login <pipeline.json>\n\n跳过已登录的平台，依次打开其余平台的官方登录页。登录完成后会再次预检。此命令不发送任何提示词。`,
-    validate: `校验 Pipeline 配置\n\n用法：ocp validate <pipeline.json>\n\n检查模式、平台、提示词 ID 和 provider options 是否与当前 OpenCLI 能力相容，不会连接模型或生成内容。`,
+    validate: `校验 Pipeline 配置\n\n用法：ocp validate <pipeline.json>\n\n检查模式、平台、提示词 ID 和 provider options 是否与当前 OpenCLI 能力相容，不会连接模型或生成内容。未安装 OpenCLI 时只做离线结构校验，并明确提示哪些项未校验。`,
     run: `运行 Pipeline\n\n用法：ocp run <pipeline.json> [--out runs]\n\n先执行预检，随后按提示词顺序和平台顺序串行调用 OpenCLI。默认输出到 runs/<时间>-<名称>/。--out 可指定输出根目录。发生失败时是否继续由 options.continueOnError 控制。`,
     resume: `恢复未完成的运行\n\n用法：ocp resume <run-directory>\n\n重新预检账号，只重试 failed 或 pending 项。已成功且产物仍在的项不会再次生成。`
   };
   if (topic) {
-    if (!guides[topic]) throw new Error(`Unknown help topic: ${topic}. Run 'ocp help'.`);
+    if (!guides[topic]) throw new Error(`没有这个帮助主题：${topic}。请运行 ocp help 查看可用主题。`);
     stdout.write(`${guides[topic]}\n`);
     return;
   }
@@ -57,7 +57,14 @@ async function providersCommand(args) {
 async function validateCommand(args) {
   const file = requireArgument(args[0], "pipeline.json");
   const pipeline = await loadPipeline(file);
-  await validatePipeline(pipeline, await discoverCapabilities());
+  try {
+    await validatePipeline(pipeline, await discoverCapabilities());
+  } catch (error) {
+    if (error.code !== "OPENCLI_NOT_FOUND") throw error;
+    validatePipelineOffline(pipeline);
+    stdout.write(`有效（离线校验：未找到 opencli，只检查了配置结构与图像模式平台限制，文本平台可用性与平台参数未校验）：${resolve(file)}\n`);
+    return;
+  }
   stdout.write(`有效：${resolve(file)}\n`);
 }
 
@@ -95,7 +102,12 @@ async function runCommand(args) {
 
 async function resumeCommand(args) {
   const runDirectory = resolve(requireArgument(args[0], "run-directory"));
-  const pipeline = JSON.parse(await readFile(join(runDirectory, "pipeline.resolved.json"), "utf8"));
+  let pipeline;
+  try {
+    pipeline = JSON.parse(await readFile(join(runDirectory, "pipeline.resolved.json"), "utf8"));
+  } catch {
+    throw new Error(`运行目录里找不到 pipeline.resolved.json：${runDirectory}。请确认路径是某次 ocp run 的输出目录。`);
+  }
   const report = await preflight(pipeline);
   printPreflight(report, stderrWriter);
   if (!report.ready) {
@@ -126,6 +138,9 @@ async function initCommand(args) {
   }
   if (promptFile) values.prompts = (await readFile(resolve(promptFile), "utf8")).split(/\r?\n/).filter(Boolean);
   values.prompts ||= [];
+  if (!["text", "image"].includes(values.mode)) throw new Error(`模式必须是 text 或 image，当前是：${values.mode ?? "（未填）"}。`);
+  if (!values.providers?.length) throw new Error("至少要选一个平台，例如 --providers gemini,deepseek。");
+  if (values.prompts.length === 0) throw new Error("提示词为空：请用 --prompts-file 指定提示词文件，或不带参数运行 ocp init 交互输入。");
   const pipeline = { version: 1, name: basename(out, extname(out)), mode: values.mode, providers: values.providers, prompts: values.prompts.map((text, index) => ({ id: `prompt-${String(index + 1).padStart(3, "0")}`, text })), options: { timeoutSeconds: DEFAULT_TIMEOUTS[values.mode] || 120, continueOnError: true, siteSession: "ephemeral" } };
   await writeJson(out, pipeline);
   stdout.write(`${out}\n`);
@@ -206,7 +221,7 @@ async function executeItem({ pipeline, prompt, provider, capability, runDirector
   }
   if (supported.has("timeout")) args.push("--timeout", String(timeout));
   for (const [key, value] of Object.entries(provider.options || {})) {
-    if (!supported.has(key)) throw new Error(`${provider.id} does not support provider option: ${key}`);
+    if (!supported.has(key)) throw new Error(`${provider.id} 不支持该平台参数：${key}。请运行 opencli ${provider.id} ${pipeline.mode === "image" ? "image" : "ask"} --help 查看可用参数。`);
     args.push(`--${key}`, String(value));
   }
   args.push("-f", "json", "--site-session", pipeline.options?.siteSession || "ephemeral");
@@ -219,16 +234,23 @@ async function executeItem({ pipeline, prompt, provider, capability, runDirector
   const text = pipeline.mode === "text" ? extractText(parsed) : "";
   const succeeded = output.code === 0 && (pipeline.mode === "image" ? files.length > 0 : Boolean(text));
   if (pipeline.mode === "text" && text) await writeFile(join(directory, "response.md"), `${text.trim()}\n`);
-  const result = { id, status: succeeded ? "succeeded" : "failed", provider: provider.id, promptId: prompt.id, startedAt, finishedAt: new Date().toISOString(), exitCode: output.code, response: text, files, error: succeeded ? "" : output.stderr || "OpenCLI returned an empty result" };
+  const result = { id, status: succeeded ? "succeeded" : "failed", provider: provider.id, promptId: prompt.id, startedAt, finishedAt: new Date().toISOString(), exitCode: output.code, response: text, files, error: succeeded ? "" : output.stderr || "OpenCLI 没有返回结果" };
   await writeJson(join(directory, "result.json"), result);
   return result;
 }
 
+function opencliNotFoundError() {
+  const error = new Error("找不到 opencli 命令。请先安装 OpenCLI，并确认它在 PATH 里（可运行 opencli --version 检查）；也可设置 OPENCLI_BIN 指向 opencli 可执行文件。");
+  error.code = "OPENCLI_NOT_FOUND";
+  return error;
+}
+
 async function discoverCapabilities() {
   const result = await invokeOpencli(["list", "-f", "json"]);
-  if (result.code !== 0) throw new Error(`Cannot discover OpenCLI capabilities: ${result.stderr || result.stdout}`);
+  if (result.spawnError === "ENOENT") throw opencliNotFoundError();
+  if (result.code !== 0) throw new Error(`读取 OpenCLI 平台列表失败：${(result.stderr || result.stdout).trim() || `退出码 ${result.code}`}。请运行 opencli doctor 检查 OpenCLI 状态。`);
   const commands = parseOutput(result.stdout);
-  if (!Array.isArray(commands)) throw new Error("OpenCLI list did not return a JSON array.");
+  if (!Array.isArray(commands)) throw new Error("opencli list 没有返回 JSON 数组，请运行 opencli doctor 检查 OpenCLI 状态。");
   const text = commands.filter((item) => item.name === "ask" && item.browser && item.access === "write");
   const image = commands.filter((item) => item.name === "image" && IMAGE_PROVIDERS.has(item.site) && item.access === "write");
   return { text, image };
@@ -239,29 +261,55 @@ function resolveProviders(pipeline, capabilities) {
   return raw.map((provider) => typeof provider === "string" ? { id: provider, options: {} } : { id: provider.id, timeoutSeconds: provider.timeoutSeconds, options: provider.options || {} });
 }
 
-async function validatePipeline(pipeline, capabilities) {
-  if (!pipeline || pipeline.version !== 1) throw new Error("pipeline.version must be 1.");
-  if (!['text', 'image'].includes(pipeline.mode)) throw new Error("pipeline.mode must be 'text' or 'image'.");
-  if (!Array.isArray(pipeline.providers) || pipeline.providers.length === 0) throw new Error("pipeline.providers must not be empty.");
-  if (!Array.isArray(pipeline.prompts) || pipeline.prompts.length === 0) throw new Error("pipeline.prompts must not be empty.");
+function validateStructure(pipeline) {
+  if (!pipeline || pipeline.version !== 1) throw new Error("配置 version 必须是 1。");
+  if (!["text", "image"].includes(pipeline.mode)) throw new Error("配置 mode 必须是 text 或 image。");
+  if (!Array.isArray(pipeline.providers) || pipeline.providers.length === 0) throw new Error("配置 providers 不能为空。");
+  if (!Array.isArray(pipeline.prompts) || pipeline.prompts.length === 0) throw new Error("配置 prompts 不能为空。");
   const ids = new Set();
   for (const prompt of pipeline.prompts) {
-    if (!prompt?.id || !prompt?.text?.trim()) throw new Error("Each prompt needs a non-empty id and text.");
-    if (ids.has(prompt.id)) throw new Error(`Duplicate prompt id: ${prompt.id}`);
+    if (!prompt?.id || !prompt?.text?.trim()) throw new Error("每条提示词都需要非空的 id 和 text。");
+    if (ids.has(prompt.id)) throw new Error(`提示词 id 重复：${prompt.id}`);
     ids.add(prompt.id);
   }
+}
+
+async function validatePipeline(pipeline, capabilities) {
+  validateStructure(pipeline);
   for (const provider of resolveProviders(pipeline, capabilities)) {
-    if (!provider.id) throw new Error("Every provider object needs id.");
+    if (!provider.id) throw new Error("每个平台对象都需要 id。");
     const capability = findCapability(capabilities, provider.id, pipeline.mode);
-    if (!capability) throw new Error(`${provider.id} is not a supported ${pipeline.mode} provider on this machine.`);
+    if (!capability) throw new Error(`${provider.id} 在这台机器上不是可用的${pipeline.mode === "image" ? "图像" : "文本"}平台。请运行 ocp providers 查看可用平台。`);
     const known = new Set((capability.args || []).map((argument) => argument.name));
-    for (const key of Object.keys(provider.options || {})) if (!known.has(key)) throw new Error(`${provider.id} does not support provider option: ${key}`);
+    for (const key of Object.keys(provider.options || {})) if (!known.has(key)) throw new Error(`${provider.id} 不支持该平台参数：${key}。请运行 opencli ${provider.id} ${pipeline.mode === "image" ? "image" : "ask"} --help 查看可用参数。`);
+  }
+}
+
+function validatePipelineOffline(pipeline) {
+  validateStructure(pipeline);
+  if (pipeline.mode === "image") {
+    const providers = pipeline.providers.flatMap((provider) => provider === "all" ? [] : [typeof provider === "string" ? provider : provider.id]);
+    for (const id of providers) {
+      if (!IMAGE_PROVIDERS.has(id)) throw new Error(`图像模式只支持 chatgpt 和 gemini，当前是：${id}。`);
+    }
   }
 }
 
 function findCapability(capabilities, provider, mode) { return (mode === "image" ? capabilities.image : capabilities.text).find((item) => item.site === provider); }
-async function loadPipeline(file) { return JSON.parse(await readFile(resolve(file), "utf8")); }
-function requireArgument(value, name) { if (!value || value.startsWith("--")) throw new Error(`Missing required argument: ${name}`); return value; }
+async function loadPipeline(file) {
+  let text;
+  try {
+    text = await readFile(resolve(file), "utf8");
+  } catch {
+    throw new Error(`找不到配置文件：${resolve(file)}。请确认路径正确。`);
+  }
+  try {
+    return JSON.parse(text);
+  } catch (error) {
+    throw new Error(`配置文件不是有效的 JSON：${resolve(file)}（${error.message}）。请检查 JSON 格式，例如多余的逗号或未闭合的括号。`);
+  }
+}
+function requireArgument(value, name) { if (!value || value.startsWith("--")) throw new Error(`缺少必填参数：${name}。`); return value; }
 function parseOutput(text) { try { return JSON.parse(text); } catch { return text.trim() || null; } }
 function loginState(value, result) { const source = `${typeof value === "string" ? value : JSON.stringify(value)} ${result.stderr}`.toLowerCase(); if (result.code !== 0) return "unknown"; if (/login[^a-z]*(yes|true)|logged_in[^a-z]*(true|yes)/.test(source)) return "yes"; if (/guest|login[^a-z]*(no|false)|not_logged_in/.test(source)) return "no"; return "unknown"; }
 function extractText(value) { if (typeof value === "string") return value; if (!value || typeof value !== "object") return ""; for (const key of ["response", "text", "Text", "content", "message", "answer"]) if (typeof value[key] === "string" && value[key].trim()) return value[key]; for (const item of Object.values(value)) { const found = extractText(item); if (found) return found; } return ""; }
@@ -272,4 +320,4 @@ async function filesIn(directory) { if (!await exists(directory)) return []; con
 async function writeJson(file, value) { await mkdir(dirname(file), { recursive: true }); const temporary = `${file}.tmp`; await writeFile(temporary, `${JSON.stringify(value, null, 2)}\n`); await rename(temporary, file); }
 async function writeSummary(directory, manifest) { const lines = [`# OpenCLI Pipeline Run`, "", `状态：${manifest.status}`, "", "| 项目 | 平台 | 状态 | 文件 |", "| --- | --- | --- | --- |"]; for (const item of manifest.items) lines.push(`| ${item.promptId} | ${item.provider} | ${item.status} | ${item.files.join("<br>") || (item.response ? `items/${item.id}/response.md` : "-")} |`); await writeFile(join(directory, "summary.md"), `${lines.join("\n")}\n`); }
 async function opencliVersion() { const result = await invokeOpencli(["--version"]); return result.stdout.trim() || "unknown"; }
-async function invokeOpencli(args) { const binary = process.env.OPENCLI_BIN || "opencli"; const command = binary.endsWith(".js") ? process.execPath : binary; const commandArgs = binary.endsWith(".js") ? [binary, ...args] : args; return new Promise((resolvePromise) => { const child = spawn(command, commandArgs, { stdio: ["ignore", "pipe", "pipe"] }); let stdoutText = ""; let stderrText = ""; child.stdout.on("data", (chunk) => { stdoutText += chunk; }); child.stderr.on("data", (chunk) => { stderrText += chunk; }); child.on("error", (error) => resolvePromise({ code: 69, stdout: stdoutText, stderr: `${stderrText}${error.message}` })); child.on("close", (code) => resolvePromise({ code: code ?? 1, stdout: stdoutText, stderr: stderrText })); }); }
+async function invokeOpencli(args) { const binary = process.env.OPENCLI_BIN || "opencli"; const command = binary.endsWith(".js") ? process.execPath : binary; const commandArgs = binary.endsWith(".js") ? [binary, ...args] : args; return new Promise((resolvePromise) => { const child = spawn(command, commandArgs, { stdio: ["ignore", "pipe", "pipe"] }); let stdoutText = ""; let stderrText = ""; child.stdout.on("data", (chunk) => { stdoutText += chunk; }); child.stderr.on("data", (chunk) => { stderrText += chunk; }); child.on("error", (error) => resolvePromise({ code: 69, stdout: stdoutText, stderr: `${stderrText}${error.message}`, spawnError: error.code })); child.on("close", (code) => resolvePromise({ code: code ?? 1, stdout: stdoutText, stderr: stderrText })); }); }
