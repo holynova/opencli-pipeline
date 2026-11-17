@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg"
+     width="1200" height="360" viewBox="0 0 1200 360"
+     role="img" aria-labelledby="title desc">
+  <title id="title">OpenCLI Pipeline — 严格串行的本地 AI 内容流水线</title>
+  <desc id="desc">深蓝底标题：OpenCLI Pipeline；右侧是四步串行序列：提示词 1 经 Gemini、DeepSeek，再到提示词 2 经 Gemini、DeepSeek，一条接一条，不并行。</desc>
+
+  <rect width="1200" height="360" rx="26" fill="#0b1020"/>
+
+  <g id="title-block" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif">
+    <text x="56" y="62" font-size="19" letter-spacing="3" fill="#8ee3c2">NODE.JS CLI · LOCAL-FIRST</text>
+    <text x="56" y="128" font-size="46" font-weight="700" fill="#edf2ff">OpenCLI Pipeline</text>
+    <text x="56" y="168" font-size="23" fill="#edf2ff">严格串行的本地 AI 内容流水线</text>
+    <text x="56" y="204" font-size="19" fill="#aab6d3">一批提示词写进 JSON，按顺序调 OpenCLI，逐条保存结果。</text>
+    <g id="chips" font-size="18" fill="#edf2ff" text-anchor="middle">
+      <g><rect x="56" y="238" width="150" height="36" rx="18" fill="#151d33" stroke="#2a3858" stroke-width="1.5"/><text x="131" y="262">零第三方依赖</text></g>
+      <g><rect x="218" y="238" width="150" height="36" rx="18" fill="#151d33" stroke="#2a3858" stroke-width="1.5"/><text x="293" y="262">9 个文本平台</text></g>
+      <g><rect x="380" y="238" width="140" height="36" rx="18" fill="#151d33" stroke="#2a3858" stroke-width="1.5"/><text x="450" y="262">文本 + 图片</text></g>
+      <g><rect x="532" y="238" width="140" height="36" rx="18" fill="#151d33" stroke="#2a3858" stroke-width="1.5"/><text x="602" y="262">失败可续跑</text></g>
+    </g>
+  </g>
+
+  <g id="sequence" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="18" text-anchor="middle">
+    <g><rect x="800" y="52" width="320" height="40" rx="10" fill="#151d33" stroke="#2a3858" stroke-width="1.5"/><text x="960" y="78" fill="#edf2ff">1 · 提示词 1 → Gemini</text></g>
+    <polygon points="960,100 952,112 968,112" fill="#8ee3c2"/>
+    <g><rect x="800" y="116" width="320" height="40" rx="10" fill="#151d33" stroke="#2a3858" stroke-width="1.5"/><text x="960" y="142" fill="#edf2ff">2 · 提示词 1 → DeepSeek</text></g>
+    <polygon points="960,164 952,176 968,176" fill="#8ee3c2"/>
+    <g><rect x="800" y="180" width="320" height="40" rx="10" fill="#151d33" stroke="#2a3858" stroke-width="1.5"/><text x="960" y="206" fill="#edf2ff">3 · 提示词 2 → Gemini</text></g>
+    <polygon points="960,228 952,240 968,240" fill="#8ee3c2"/>
+    <g><rect x="800" y="244" width="320" height="40" rx="10" fill="#8ee3c2"/><text x="960" y="270" fill="#0b201a">4 · 提示词 2 → DeepSeek</text></g>
+    <text x="960" y="322" fill="#aab6d3">严格串行 · 一条接一条，不并行</text>
+  </g>
+</svg>
