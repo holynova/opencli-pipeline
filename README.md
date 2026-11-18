@@ -1,22 +1,20 @@
+<p align="right"><a href="README.en.md">English</a></p>
+
 <p align="center">
   <img src="./assets/readme/hero.svg" width="100%" alt="OpenCLI Pipeline — 四步串行序列：提示词 1 经 Gemini、DeepSeek，再到提示词 2 经 Gemini、DeepSeek，一条接一条，不并行">
 </p>
 
 <p align="center">
-  <a href="https://xiaosang.cc/opencli-pipeline/">▶ 项目主页 Project Page</a>
+  <a href="https://xiaosang.cc/opencli-pipeline/">▶ 项目主页</a>
   ·
   <a href="https://github.com/holynova/opencli-pipeline">GitHub 仓库</a>
 </p>
 
 OpenCLI Pipeline（`ocp`，v0.1.0）是一个本地命令行工作流工具：把多条提示词和目标平台写进一个 JSON 文件，它按顺序调用 OpenCLI，把每条文本回答或图片单独保存到本地。严格串行，不并行；零第三方 npm 依赖，只需 Node.js 20+。
 
-OpenCLI Pipeline (`ocp`, v0.1.0) is a local CLI workflow tool: write prompts and target platforms into a JSON file, and it calls OpenCLI in strict serial order, saving each text answer or image to disk separately. Strictly serial, never parallel; zero third-party npm dependencies, just Node.js 20+.
-
 它不调用模型 API，也不保存 Cookie、账号或密码。模型登录、会员资格和生成额度都由 OpenCLI 连接的浏览器会话提供。
 
-It never calls model APIs directly and never stores cookies, accounts, or passwords. Model login, membership, and generation quotas all come from the browser session OpenCLI connects to.
-
-## 能做什么 / What It Does
+## 能做什么
 
 - **批量处理多条提示词，严格串行执行**：执行顺序固定为提示词 × 平台的笛卡尔顺序（提示词 1 的 Gemini、提示词 1 的 DeepSeek、提示词 2 的 Gemini……）。
 - **文本模式**：可选择多个 OpenCLI `ask` 平台；`providers: ["all"]` 展开为 9 个通用网页文本平台：ChatGPT、Gemini、Claude、DeepSeek、豆包、Grok、Kimi、千问、元宝。
@@ -25,7 +23,7 @@ It never calls model APIs directly and never stores cookies, accounts, or passwo
 - **运行前检查**：检查 OpenCLI、Browser Bridge 和账号状态；可逐个平台引导网页登录。
 - **完整记录**：每条调用保留提示词、原始返回、错误日志、最终结果和运行汇总；失败后可只重试失败项。
 
-## 前置条件 / Prerequisites
+## 前置条件
 
 1. Node.js 20 或更高版本。
 2. 已安装 OpenCLI，并通过浏览器桥接检查。
@@ -39,7 +37,7 @@ opencli doctor
 
 本项目没有第三方 npm 依赖。开发时直接运行 `node bin/ocp.js` 即可；如需把 `ocp` 加入当前终端环境，在项目目录执行 `npm link`。
 
-## 最短使用流程 / Quick Start
+## 最短使用流程
 
 ```bash
 # 1. 查看本机 OpenCLI 已发现的平台
@@ -63,7 +61,7 @@ node bin/ocp.js run my-pipeline.json
 
 命令帮助：`node bin/ocp.js help`，或 `node bin/ocp.js help run` / `help login` / `help preflight` / `help init`。
 
-## 创建 Pipeline / Creating a Pipeline
+## 创建 Pipeline
 
 交互式创建（依次询问模式、平台和提示词，提示词逐条输入，空行结束）：
 
@@ -113,7 +111,7 @@ node bin/ocp.js init --mode text --providers gemini,deepseek \
 
 `providers[].options` 只能填 OpenCLI 对该平台公开的参数。运行 `opencli <平台> <命令> --help` 可查看当前版本可用的参数。
 
-## 账号预检和登录 / Preflight & Login
+## 账号预检和登录
 
 预检不发送提示词，只执行 OpenCLI 的诊断、能力发现和站点状态查询：
 
@@ -131,7 +129,7 @@ node bin/ocp.js login pipeline.json
 
 已手工确认可用的平台，可用 `options.allowUnknownLogin` 显式放行（仅对已确认的平台使用）；`allowGuest` 可按平台放行游客态，但游客功能和额度由平台决定，通常不建议用于批量生产。
 
-## 运行结果 / Run Output
+## 运行结果
 
 每次 `run` 都创建一个新的目录，不会覆盖旧结果：
 
@@ -156,7 +154,7 @@ runs/20260718T150000-article-outline/
 - `result.json` 记录退出码、耗时、文本或图片文件路径和错误信息；`summary.md` 汇总这次运行所有项目。
 - 可指定输出根目录：`node bin/ocp.js run pipeline.json --out ./my-runs`。
 
-## 失败、停止和恢复 / Failure & Resume
+## 失败、停止和恢复
 
 `ocp` 保留 OpenCLI 的原始 stdout、stderr 和退出码。即使 OpenCLI 返回退出码 0，只要没有产生文本或图片文件，项目也会标为失败。修复账号、网络或平台问题后，用运行目录恢复：
 
@@ -166,7 +164,7 @@ node bin/ocp.js resume runs/20260718T150000-article-outline
 
 已经成功且产物仍在的项目不会再次调用模型；失败或未完成的项目会重新执行。
 
-## 技术 / Tech
+## 技术
 
 - Node.js 20+，ESM，零第三方依赖；单一 CLI 入口 `src/cli.js`（`bin/ocp.js` 仅转发）。
 - 通过子进程调用 `opencli` 命令（`ask` / `image` / `doctor` 等），解析其输出与退出码；用 `opencli` 的能力发现动态列出本机平台。
@@ -181,17 +179,3 @@ examples/               text-pipeline.json / image-pipeline.json /
 test/ocp.test.js        5 个用例（node --test）
 test/fixtures/opencli.js  模拟 OpenCLI（供测试用）
 ```
-
-## English
-
-**OpenCLI Pipeline** (`ocp`, v0.1.0) is a local CLI workflow tool: write prompts and target platforms into a JSON file and it calls OpenCLI in strict serial order, saving each text answer or image to disk separately. Zero third-party npm dependencies; requires Node.js 20+.
-
-- **What it does**: batch prompts in strict serial order (prompt × provider, in fixed sequence); text mode across multiple OpenCLI `ask` platforms (`"all"` expands to 9 web text platforms: ChatGPT, Gemini, Claude, DeepSeek, Doubao, Grok, Kimi, Qwen, Yuanbao); image mode with ChatGPT or Gemini only, downloaded to the local run directory; per-platform options (timeout, model, think, ratio, style) passed through to OpenCLI.
-- **Safety**: preflight checks OpenCLI, the Browser Bridge, and login state before any generation; `login` guides each un-logged-in platform through its official login page. It never bypasses login, captchas, or account permissions, never calls model APIs directly, and never stores cookies, accounts, or passwords.
-- **Workflow**: `providers` → `init` (or copy an example) → `validate` → `preflight` → `login` → `run` (outputs to `runs/<timestamp>-<name>/` with `manifest.json`, `summary.md`, and per-item `request.json`/`stdout.json`/`stderr.log`/`response.md`/`result.json`) → `resume` to retry only failed items.
-- **Config**: `version` (1), `name`, `mode` (`text`/`image`), `providers`, `prompts` (unique `id` + non-empty `text`); timeouts default to 120s (text) / 240s (image); `continueOnError` and `siteSession` (`ephemeral` recommended to avoid cross-prompt context).
-- **Tech**: Node.js 20+, ESM, zero dependencies; single CLI in `src/cli.js` shelling out to `opencli`. Tests: `npm test` (5 cases, verified passing locally) with a mock OpenCLI fixture.
-
-## 许可 / License
-
-本仓库未附 LICENSE 文件，`package.json` 未声明 license。
